@@ -21,6 +21,10 @@ const MatrixOperations = ({ onBack, onExport, onHistory, onEdit }) => {
     const [selectedIdA, setSelectedIdA] = useState(null);
     const [selectedIdB, setSelectedIdB] = useState(null);
 
+    // State for Add Matrix Modal
+    const [showAddModal, setShowAddModal] = useState(false);
+    const [newMatrixConfig, setNewMatrixConfig] = useState({ name: '', rows: 3, cols: 3, data: [] });
+
     // Auto-select first two if available on load
     useEffect(() => {
         if (projectMatrices.length >= 1 && !selectedIdA) setSelectedIdA(projectMatrices[0].id);
@@ -118,13 +122,51 @@ const MatrixOperations = ({ onBack, onExport, onHistory, onEdit }) => {
     };
 
     const handleAddMatrix = () => {
+        const initialRows = 3;
+        const initialCols = 3;
+        const initialData = Array(initialRows).fill().map(() => Array(initialCols).fill('0'));
+        setNewMatrixConfig({
+            name: `Matrix ${String.fromCharCode(65 + projectMatrices.length)}`,
+            rows: initialRows,
+            cols: initialCols,
+            data: initialData
+        });
+        setShowAddModal(true);
+    };
+
+    const handleConfigChange = (field, value) => {
+        const val = Math.max(1, Math.min(10, value));
+        setNewMatrixConfig(prev => {
+            const next = { ...prev, [field]: val };
+            // Resize data array preserving values
+            const newData = Array(next.rows).fill().map((_, r) =>
+                Array(next.cols).fill().map((_, c) =>
+                    (prev.data[r] && prev.data[r][c]) ? prev.data[r][c] : '0'
+                )
+            );
+            return { ...next, data: newData };
+        });
+    };
+
+    const handleConfigDataChange = (row, col, value) => {
+        setNewMatrixConfig(prev => {
+            const newData = prev.data.map((r, rIndex) =>
+                rIndex === row ? r.map((c, cIndex) => cIndex === col ? value : c) : r
+            );
+            return { ...prev, data: newData };
+        });
+    };
+
+    const handleConfirmAdd = (e) => {
+        e.preventDefault();
         const newMat = {
-            name: `Matrix ${String.fromCharCode(65 + projectMatrices.length)}`, // A, B, C...
-            rows: 3,
-            cols: 3,
-            data: [['0', '0', '0'], ['0', '0', '0'], ['0', '0', '0']]
+            name: newMatrixConfig.name,
+            rows: newMatrixConfig.rows,
+            cols: newMatrixConfig.cols,
+            data: newMatrixConfig.data
         };
         addMatrix(newMat);
+        setShowAddModal(false);
     };
 
     const handleDeleteMatrix = (id) => {
@@ -401,6 +443,96 @@ const MatrixOperations = ({ onBack, onExport, onHistory, onEdit }) => {
                 )}
                 <div className="h-10"></div>
             </div>
+
+            {/* Add Matrix Modal */}
+            {showAddModal && (
+                <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200 overflow-y-auto">
+                    <div className="bg-white dark:bg-[#1c222e] w-full max-w-lg rounded-2xl p-6 shadow-2xl border border-slate-200 dark:border-slate-700 my-8">
+                        <h3 className="text-xl font-bold mb-4 text-slate-900 dark:text-white">Add New Matrix</h3>
+                        <form onSubmit={handleConfirmAdd}>
+                            <div className="mb-4">
+                                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Matrix Name</label>
+                                <input
+                                    autoFocus
+                                    type="text"
+                                    className="w-full rounded-lg border-slate-300 dark:border-slate-600 bg-white dark:bg-black/20 text-slate-900 dark:text-white focus:ring-primary focus:border-primary"
+                                    placeholder="Matrix Name"
+                                    value={newMatrixConfig.name}
+                                    onChange={e => setNewMatrixConfig({ ...newMatrixConfig, name: e.target.value })}
+                                />
+                            </div>
+                            <div className="grid grid-cols-2 gap-4 mb-6">
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Rows</label>
+                                    <input
+                                        type="number"
+                                        min="1"
+                                        max="10"
+                                        className="w-full rounded-lg border-slate-300 dark:border-slate-600 bg-white dark:bg-black/20 text-slate-900 dark:text-white focus:ring-primary focus:border-primary"
+                                        value={newMatrixConfig.rows}
+                                        onChange={e => handleConfigChange('rows', parseInt(e.target.value) || 1)}
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Columns</label>
+                                    <input
+                                        type="number"
+                                        min="1"
+                                        max="10"
+                                        className="w-full rounded-lg border-slate-300 dark:border-slate-600 bg-white dark:bg-black/20 text-slate-900 dark:text-white focus:ring-primary focus:border-primary"
+                                        value={newMatrixConfig.cols}
+                                        onChange={e => handleConfigChange('cols', parseInt(e.target.value) || 1)}
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Matrix Values Input */}
+                            <div className="mb-6">
+                                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Enter Values</label>
+                                <div className="p-3 bg-gray-50 dark:bg-black/20 rounded-xl border border-slate-200 dark:border-slate-700">
+                                    <div
+                                        className="grid gap-2 w-full"
+                                        style={{
+                                            gridTemplateColumns: `repeat(${newMatrixConfig.cols}, 1fr)`
+                                        }}
+                                    >
+                                        {newMatrixConfig.data.map((row, i) => (
+                                            row.map((val, j) => (
+                                                <input
+                                                    key={`${i}-${j}`}
+                                                    type="number"
+                                                    step="any"
+                                                    value={val}
+                                                    onChange={e => handleConfigDataChange(i, j, e.target.value)}
+                                                    className="w-full px-1 py-2 text-center text-sm rounded-lg border-slate-300 dark:border-slate-600 bg-white dark:bg-[#1c222e] text-slate-900 dark:text-white focus:ring-primary focus:border-primary focus:z-10 min-w-0"
+                                                    placeholder="0"
+                                                />
+                                            ))
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="flex gap-3 justify-end">
+                                <button
+                                    type="button"
+                                    onClick={() => setShowAddModal(false)}
+                                    className="px-4 py-2 text-sm font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={!newMatrixConfig.name.trim()}
+                                    className="px-4 py-2 text-sm font-bold text-white bg-primary rounded-lg hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                >
+                                    Create Matrix
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

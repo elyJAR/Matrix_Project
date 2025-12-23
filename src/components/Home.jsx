@@ -1,11 +1,15 @@
 import React, { useState } from 'react';
 import { useMatrix } from '../context/MatrixContext';
+import { exportProjectToPDF } from '../utils/pdfExporter';
+import { exportProjectToDOCX } from '../utils/docxExporter';
 
 const Home = ({ onStart, onScan, onTemplates, onProfile, onSettings }) => {
     const { projects, createProject, loadProject, deleteProject, renameProject, loading } = useMatrix();
     const [showNewProjectModal, setShowNewProjectModal] = useState(false);
     const [renamingProject, setRenamingProject] = useState(null); // { id, name }
     const [newProjectName, setNewProjectName] = useState('');
+    const [showExportModal, setShowExportModal] = useState(false);
+    const [exportingProject, setExportingProject] = useState(null);
 
     const handleCreateProject = async (e) => {
         e.preventDefault();
@@ -40,6 +44,49 @@ const Home = ({ onStart, onScan, onTemplates, onProfile, onSettings }) => {
     const handleRenameClick = (e, project) => {
         e.stopPropagation();
         setRenamingProject({ id: project.id, name: project.name });
+    };
+
+    const handleExportClick = (e, project) => {
+        e.stopPropagation();
+        setExportingProject(project);
+        setShowExportModal(true);
+    };
+
+    const executeExport = (type) => { // type: 'json' | 'pdf' | 'docx'
+        if (!exportingProject) return;
+
+        if (type === 'json') {
+            const dataStr = JSON.stringify(exportingProject, null, 2);
+            const blob = new Blob([dataStr], { type: "application/json" });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.href = url;
+            link.download = `${exportingProject.name.replace(/\s+/g, '_')}_backup.json`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+        } else if (type === 'pdf') {
+            exportProjectToPDF(exportingProject);
+        } else if (type === 'docx') {
+            exportProjectToDOCX(exportingProject);
+        }
+        setShowExportModal(false);
+        setExportingProject(null);
+    };
+
+    const handleExportProject = (e, project) => {
+        e.stopPropagation();
+        const dataStr = JSON.stringify(project, null, 2);
+        const blob = new Blob([dataStr], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = `${project.name.replace(/\s+/g, '_')}_export.json`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
     };
 
     return (
@@ -138,6 +185,12 @@ const Home = ({ onStart, onScan, onTemplates, onProfile, onSettings }) => {
                                         <span className="material-symbols-outlined">edit</span>
                                     </button>
                                     <button
+                                        onClick={(e) => handleExportClick(e, project)}
+                                        className="p-2 rounded-full text-slate-400 hover:text-green-500 hover:bg-slate-100 dark:hover:bg-slate-700/50 transition-colors"
+                                    >
+                                        <span className="material-symbols-outlined">ios_share</span>
+                                    </button>
+                                    <button
                                         onClick={(e) => handleDeleteProject(e, project.id)}
                                         className="p-2 rounded-full text-slate-400 hover:text-red-500 hover:bg-slate-100 dark:hover:bg-slate-700/50 transition-colors"
                                     >
@@ -149,6 +202,47 @@ const Home = ({ onStart, onScan, onTemplates, onProfile, onSettings }) => {
                     )}
                 </div>
             </main>
+
+            {/* Export Format Modal */}
+            {showExportModal && (
+                <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className="bg-white dark:bg-[#1c222e] w-full max-w-sm rounded-2xl p-6 shadow-2xl border border-slate-200 dark:border-slate-700">
+                        <h3 className="text-xl font-bold mb-4 text-slate-900 dark:text-white">Export Project</h3>
+                        <p className="text-slate-500 dark:text-slate-400 mb-6">Choose a format to export <strong>{exportingProject?.name}</strong>.</p>
+
+                        <div className="grid grid-cols-3 gap-3">
+                            <button
+                                onClick={() => executeExport('json')}
+                                className="flex flex-col items-center justify-center gap-3 p-3 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-primary hover:bg-primary/5 transition-all text-slate-700 dark:text-slate-300 hover:text-primary"
+                            >
+                                <span className="material-symbols-outlined text-2xl">data_object</span>
+                                <span className="font-bold text-xs">JSON Backup</span>
+                            </button>
+                            <button
+                                onClick={() => executeExport('pdf')}
+                                className="flex flex-col items-center justify-center gap-3 p-3 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-red-500 hover:bg-red-50 dark:hover:bg-red-900/10 transition-all text-slate-700 dark:text-slate-300 hover:text-red-500"
+                            >
+                                <span className="material-symbols-outlined text-2xl">picture_as_pdf</span>
+                                <span className="font-bold text-xs">PDF Report</span>
+                            </button>
+                            <button
+                                onClick={() => executeExport('docx')}
+                                className="flex flex-col items-center justify-center gap-3 p-3 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/10 transition-all text-slate-700 dark:text-slate-300 hover:text-blue-600"
+                            >
+                                <span className="material-symbols-outlined text-2xl">description</span>
+                                <span className="font-bold text-xs">DOCX Word</span>
+                            </button>
+                        </div>
+
+                        <button
+                            onClick={() => setShowExportModal(false)}
+                            className="w-full mt-6 py-3 font-bold text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors"
+                        >
+                            Cancel
+                        </button>
+                    </div>
+                </div>
+            )}
 
             {/* Rename Project Modal */}
             {renamingProject && (
