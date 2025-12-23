@@ -1,7 +1,9 @@
 import { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, BorderStyle, WidthType, AlignmentType, HeadingLevel } from "docx";
-import { saveAs } from "file-saver";
+import { saveAndShareFile } from "./fileHandler";
 
 export const exportProjectToDOCX = async (project) => {
+    // ... [rest of the code is inside the function]
+
     // --- Helper to create a matrix table ---
     const createMatrixTable = (data) => {
         return new Table({
@@ -141,5 +143,5 @@ export const exportProjectToDOCX = async (project) => {
     });
 
     const blob = await Packer.toBlob(doc);
-    saveAs(blob, `${project.name.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_report.docx`);
+    saveAndShareFile(blob, `${project.name.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_report.docx`);
 };

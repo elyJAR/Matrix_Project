@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useMatrix } from '../context/MatrixContext';
 import { exportProjectToPDF } from '../utils/pdfExporter';
 import { exportProjectToDOCX } from '../utils/docxExporter';
+import { saveAndShareFile } from '../utils/fileHandler';
 
 const Home = ({ onStart, onScan, onTemplates, onProfile, onSettings }) => {
     const { projects, createProject, loadProject, deleteProject, renameProject, loading } = useMatrix();
@@ -58,14 +59,7 @@ const Home = ({ onStart, onScan, onTemplates, onProfile, onSettings }) => {
         if (type === 'json') {
             const dataStr = JSON.stringify(exportingProject, null, 2);
             const blob = new Blob([dataStr], { type: "application/json" });
-            const url = URL.createObjectURL(blob);
-            const link = document.createElement("a");
-            link.href = url;
-            link.download = `${exportingProject.name.replace(/\s+/g, '_')}_backup.json`;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            URL.revokeObjectURL(url);
+            saveAndShareFile(blob, `${exportingProject.name.replace(/\s+/g, '_')}_backup.json`);
         } else if (type === 'pdf') {
             exportProjectToPDF(exportingProject);
         } else if (type === 'docx') {
@@ -73,20 +67,6 @@ const Home = ({ onStart, onScan, onTemplates, onProfile, onSettings }) => {
         }
         setShowExportModal(false);
         setExportingProject(null);
-    };
-
-    const handleExportProject = (e, project) => {
-        e.stopPropagation();
-        const dataStr = JSON.stringify(project, null, 2);
-        const blob = new Blob([dataStr], { type: "application/json" });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement("a");
-        link.href = url;
-        link.download = `${project.name.replace(/\s+/g, '_')}_export.json`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
     };
 
     return (

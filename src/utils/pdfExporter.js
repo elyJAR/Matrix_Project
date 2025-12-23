@@ -1,5 +1,6 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { saveAndShareFile } from './fileHandler';
 
 export const exportProjectToPDF = (project) => {
     const doc = new jsPDF();
@@ -80,9 +81,6 @@ export const exportProjectToPDF = (project) => {
         doc.text("No operations performed yet.", 14, yPos);
         yPos += 15;
     } else {
-        // Process history in reverse (most recent first) or chronological? 
-        // Usually chronological is better for "reading" a derivation. 
-        // But app shows reverse. Let's do chronological (oldest first) so it reads like a story.
         const sortedHistory = [...project.history].sort((a, b) => a.timestamp - b.timestamp);
 
         sortedHistory.forEach((item, index) => {
@@ -137,7 +135,7 @@ export const exportProjectToPDF = (project) => {
                     autoTable(doc, {
                         startY: yPos,
                         body: item.resultData,
-                        theme: 'plain', // Plain for result looked cleaner or maybe grid? Let's use grid
+                        theme: 'plain',
                         styles: {
                             halign: 'center',
                             valign: 'middle',
@@ -162,5 +160,6 @@ export const exportProjectToPDF = (project) => {
     }
 
     // Save
-    doc.save(`${project.name.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_report.pdf`);
+    const blob = doc.output('blob');
+    saveAndShareFile(blob, `${project.name.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_report.pdf`);
 };
