@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useMatrix } from '../context/MatrixContext';
 import * as db from '../services/db';
+import { saveAndShareFile } from '../utils/fileHandler';
 
 const SettingsView = ({ onBack }) => {
     const [darkMode, setDarkMode] = useState(false);
@@ -31,15 +32,7 @@ const SettingsView = ({ onBack }) => {
             const projects = await db.getProjects();
             const dataStr = JSON.stringify(projects, null, 2);
             const blob = new Blob([dataStr], { type: "application/json" });
-            const url = URL.createObjectURL(blob);
-
-            const link = document.createElement('a');
-            link.href = url;
-            link.download = `matrix_ml_backup_${new Date().toISOString().split('T')[0]}.json`;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            URL.revokeObjectURL(url);
+            saveAndShareFile(blob, `matrix_ml_backup_${new Date().toISOString().split('T')[0]}.json`);
         } catch (error) {
             console.error("Export failed:", error);
             alert("Failed to export data.");

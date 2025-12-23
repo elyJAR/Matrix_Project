@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useMatrix } from '../context/MatrixContext';
+import { saveAndShareFile } from '../utils/fileHandler';
 
 const ExportOptions = ({ onBack }) => {
     const { currentResult, currentResultType, lastOperation } = useMatrix();
@@ -35,13 +36,7 @@ const ExportOptions = ({ onBack }) => {
             if (includeNotes) content += "Notes:\n(No notes added)\n";
 
             const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
-            const url = URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            link.href = url;
-            link.download = `matrix_export_${Date.now()}.txt`;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
+            saveAndShareFile(blob, `matrix_export_${Date.now()}.txt`);
         }
     };
 
