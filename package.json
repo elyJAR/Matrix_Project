@@ -2,13 +2,33 @@
   "name": "matrix-machine-learning",
   "private": true,
   "version": "0.0.0",
+  "main": "electron/main.cjs",
+  "description": "Matrix Machine Learning Desktop Application",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "dev:host": "vite --host",
     "build": "vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "electron:dev": "concurrently \"vite\" \"timeout 5 && electron .\"",
+    "electron:build": "vite build && electron-builder"
+  },
+  "build": {
+    "appId": "com.matrixml.app",
+    "productName": "Matrix Machine Learning",
+    "files": [
+      "dist/**/*",
+      "electron/**/*",
+      "package.json"
+    ],
+    "directories": {
+      "output": "release"
+    },
+    "win": {
+      "target": "nsis",
+      "icon": "resources/icon.png"
+    }
   },
   "dependencies": {
     "@capacitor/android": "^8.0.0",
@@ -31,6 +51,9 @@
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-basic-ssl": "^2.1.0",
     "@vitejs/plugin-react": "^5.1.1",
+    "concurrently": "^9.2.1",
+    "electron": "^39.2.7",
+    "electron-builder": "^26.0.12",
     "eslint": "^9.39.1",
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-react-refresh": "^0.4.24",
